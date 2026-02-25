@@ -1,11 +1,11 @@
 package com.example.pcbuilderassistant.domain
 
-data class Build(
-    val cpu: Cpu,
-    val gpu: Gpu,
-    val motherboard: Motherboard,
-    val psu: Psu,
-    val explanation: String,
-    val balance: String
-)
+import com.example.pcbuilderassistant.data.local.entity.CpuEntity
+import com.example.pcbuilderassistant.data.local.entity.GpuEntity
 
+data class Build(
+    val cpu: CpuEntity,
+    val gpu: GpuEntity,
+    val totalPrice: Int,
+    val explanation: String
+)

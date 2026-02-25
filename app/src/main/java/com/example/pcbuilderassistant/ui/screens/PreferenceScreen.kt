@@ -1,7 +1,9 @@
 
 package com.example.pcbuilderassistant.ui.screens
 
-
+import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.pcbuilderassistant.ui.viewmodel.HardwareViewModel
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -11,10 +13,30 @@ import com.example.pcbuilderassistant.domain.Purpose
 import com.example.pcbuilderassistant.domain.Priority
 import com.example.pcbuilderassistant.domain.UserPreferences
 import com.example.pcbuilderassistant.domain.BuildGenerator
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.Dispatchers
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
+
+
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PreferenceScreen() {
+    val hardwareViewModel: HardwareViewModel = viewModel()
+    val cpuList by hardwareViewModel.cpus.collectAsState()
+    val generatedCpuText by hardwareViewModel.generatedCpu.collectAsState()
+
+
+    LaunchedEffect(Unit) {
+        hardwareViewModel.loadData()
+    }
+
+
 
     var budgetText by remember { mutableStateOf("") }
     var selectedPurpose by remember { mutableStateOf(Purpose.GAMING) }
@@ -75,26 +97,14 @@ fun PreferenceScreen() {
 
                     val budget = budgetText.toIntOrNull() ?: return@Button
 
-                    val pref = UserPreferences(
+                    val preferences = UserPreferences(
                         budget = budget,
                         purpose = selectedPurpose,
                         priority = selectedPriority
                     )
 
-                    val build = BuildGenerator.generate(pref)
-
-                    resultText =
-                        """
-                        CPU: ${build.cpu.name}
-                        GPU: ${build.gpu.name}
-                        Motherboard: ${build.motherboard.name}
-                        PSU: ${build.psu.name}
-                        Balance:
-                        ${build.balance}
-                        Reason:
-                        ${build.explanation}
-                        """.trimIndent()
-                  },
+                    hardwareViewModel.generateBuild(preferences)
+                },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Generate Build")
@@ -103,6 +113,18 @@ fun PreferenceScreen() {
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(resultText)
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text("CPUs from Database:")
+
+            cpuList.forEach { cpu ->
+                Text(text = "• ${cpu.name} (${cpu.price} ₸)")
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(generatedCpuText)
         }
     }
-}
+
+    }
+
+

@@ -1,55 +1,37 @@
 package com.example.pcbuilderassistant.domain
 
-import com.example.pcbuilderassistant.data.FakeData
+import com.example.pcbuilderassistant.data.repository.HardwareRepository
+import com.example.pcbuilderassistant.data.local.entity.CpuEntity
+import com.example.pcbuilderassistant.data.local.entity.GpuEntity
 
-object BuildGenerator {
+class BuildGenerator(
+    private val repository: HardwareRepository
+) {
 
-    fun generate(pref: UserPreferences): Build {
+    suspend fun generate(preferences: UserPreferences): Build {
 
-        // ---- GPU budget distribution ----
-        val gpuBudget = when (pref.purpose) {
-            Purpose.GAMING -> (pref.budget * 0.45).toInt()
-            Purpose.WORK -> (pref.budget * 0.25).toInt()
-            Purpose.MODELING -> (pref.budget * 0.35).toInt()
-        }
+        val cpus = repository.getAllCpus()
+        val gpus = repository.getAllGpus()
 
-        val gpu = FakeData.gpuList
-            .filter { it.price <= gpuBudget }
-            .maxByOrNull { it.price }
-            ?: FakeData.gpuList.first()
+        val cpu = cpus
+            .filter { it.price <= preferences.budget }
+            .maxByOrNull { it.cores }
+            ?: throw Exception("No suitable CPU found")
 
-        // ---- CPU budget distribution ----
-        val cpuBudget = (pref.budget * 0.25).toInt()
+        val remainingBudget = preferences.budget - cpu.price
 
-        val cpu = FakeData.cpuList
-            .filter { it.price <= cpuBudget }
-            .maxByOrNull { it.price }
-            ?: FakeData.cpuList.first()
+        val gpu = gpus
+            .filter { it.price <= remainingBudget }
+            .maxByOrNull { it.vram }
+            ?: throw Exception("No suitable GPU found")
 
-        // ---- Motherboard compatibility ----
-        val motherboard = FakeData.motherboardList
-            .first { it.socket == cpu.socket }
+        val totalPrice = cpu.price + gpu.price
 
-        // ---- PSU calculation ----
-        val requiredPower = PowerCalculator.calculateRequiredPower(cpu, gpu)
-
-        val psu = FakeData.psuList
-            .first { it.wattage >= requiredPower }
-
-        // ---- Explanation (expert reasoning) ----
-        val explanation = when (pref.purpose) {
-            Purpose.GAMING ->
-                "Для игр основной упор делается на видеокарту, поэтому большая часть бюджета выделена GPU."
-
-            Purpose.WORK ->
-                "Для рабочих задач важна вычислительная мощность процессора, поэтому выбран более производительный CPU."
-
-            Purpose.MODELING ->
-                "3D-моделирование требует баланс CPU и GPU, поэтому подобрана сбалансированная конфигурация."
-        }
-        val balance = BottleneckAnalyzer.analyze(cpu, gpu)
-
-        return Build(cpu, gpu, motherboard, psu, explanation, balance)
-
+        return Build(
+            cpu = cpu,
+            gpu = gpu,
+            totalPrice = totalPrice,
+            explanation = "CPU выбран по количеству ядер, GPU по объёму VRAM в рамках бюджета."
+        )
     }
 }
