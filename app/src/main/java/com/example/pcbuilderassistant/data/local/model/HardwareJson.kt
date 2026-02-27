@@ -1,14 +1,13 @@
-package com.example.pcbuilderassistant.domain
+package com.example.pcbuilderassistant.data.local.model
 
 import com.example.pcbuilderassistant.data.local.entity.CpuEntity
 import com.example.pcbuilderassistant.data.local.entity.GpuEntity
 import com.example.pcbuilderassistant.data.local.dao.MotherboardDao
 import com.example.pcbuilderassistant.data.local.entity.MotherboardEntity
 
-data class Build(
-    val cpu: CpuEntity,
-    val gpu: GpuEntity,
-    val totalPrice: Int,
-    val explanation: String,
-    val motherboard: MotherboardEntity
+
+data class HardwareJson(
+    val cpus: List<CpuEntity>,
+    val gpus: List<GpuEntity>,
+    val motherboards: List<MotherboardEntity>
 )

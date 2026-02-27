@@ -72,5 +72,6 @@ dependencies {
     kapt(libs.room.compiler)
     implementation(libs.coroutines.android)
     implementation(libs.lifecycle.viewmodel.compose)
+    implementation(libs.gson)
 
 }

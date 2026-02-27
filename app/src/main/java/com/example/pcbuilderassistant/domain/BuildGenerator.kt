@@ -1,71 +1,78 @@
 package com.example.pcbuilderassistant.domain
 
-import com.example.pcbuilderassistant.data.repository.HardwareRepository
 import com.example.pcbuilderassistant.data.local.entity.CpuEntity
 import com.example.pcbuilderassistant.data.local.entity.GpuEntity
+import com.example.pcbuilderassistant.data.repository.HardwareRepository
+import com.example.pcbuilderassistant.data.local.dao.MotherboardDao
+import com.example.pcbuilderassistant.data.local.entity.MotherboardEntity
+
 
 class BuildGenerator(
     private val repository: HardwareRepository
 ) {
 
-    suspend fun generate(preferences: UserPreferences): Build {
+    private val scoringEngine = ScoringEngine()
+
+    suspend fun generate(preferences: UserPreferences): Build? {
 
         val cpus = repository.getAllCpus()
         val gpus = repository.getAllGpus()
+        val compatibleMotherboards =
+            repository.getMotherboardsBySocket(cpu.socket)
 
-        val cpu: CpuEntity
-        val gpu: GpuEntity
+        if (cpus.isEmpty() || gpus.isEmpty() || motherboards.isEmpty())
+            return null
 
-        when (preferences.purpose) {
+        var bestScore = Double.MIN_VALUE
+        var bestCpu: CpuEntity? = null
+        var bestGpu: GpuEntity? = null
+        var bestMotherboard: MotherboardEntity? = null
 
-            Purpose.GAMING -> {
-                cpu = cpus
-                    .filter { it.price <= preferences.budget / 2 }
-                    .maxByOrNull { it.cores }
-                    ?: throw Exception("No CPU found")
+        for (cpu in cpus) {
+            for (gpu in gpus) {
 
-                val remaining = preferences.budget - cpu.price
+                val compatibleMotherboards =
+                    motherboards.filter { it.socket == cpu.socket }
 
-                gpu = gpus
-                    .filter { it.price <= remaining }
-                    .maxByOrNull { it.vram }
-                    ?: throw Exception("No GPU found")
+                if (compatibleMotherboards.isEmpty()) continue
+
+                val motherboard =
+                    compatibleMotherboards.minByOrNull { it.price } ?: continue
+
+                val totalPrice =
+                    cpu.price + gpu.price + motherboard.price
+
+                if (totalPrice > preferences.budget) continue
+
+                val score = scoringEngine.scoreBuild(
+                    cpu = cpu,
+                    gpu = gpu,
+                    budget = preferences.budget,
+                    purpose = preferences.purpose,
+                    priority = preferences.priority
+                )
+
+                if (score > bestScore) {
+                    bestScore = score
+                    bestCpu = cpu
+                    bestGpu = gpu
+                    bestMotherboard = motherboard
+                }
             }
+        }
 
-            Purpose.WORK -> {
-                cpu = cpus
-                    .filter { it.price <= preferences.budget * 0.7 }
-                    .maxByOrNull { it.cores }
-                    ?: throw Exception("No CPU found")
+        if (bestCpu == null || bestGpu == null || bestMotherboard == null)
+            return null
 
-                val remaining = preferences.budget - cpu.price
-
-                gpu = gpus
-                    .filter { it.price <= remaining }
-                    .maxByOrNull { it.vram }
-                    ?: throw Exception("No GPU found")
-            }
-
-            Purpose.MODELING -> {
-                cpu = cpus
-                    .filter { it.price <= preferences.budget * 0.6 }
-                    .maxByOrNull { it.cores }
-                    ?: throw Exception("No CPU found")
-
-        val remainingBudget = preferences.budget - cpu.price
-
-        val gpu = gpus
-            .filter { it.price <= remainingBudget }
-            .maxByOrNull { it.vram }
-            ?: throw Exception("No suitable GPU found")
-
-        val totalPrice = cpu.price + gpu.price
+        val total =
+            bestCpu.price + bestGpu.price + bestMotherboard.price
 
         return Build(
-            cpu = cpu,
-            gpu = gpu,
-            totalPrice = totalPrice,
-            explanation = "CPU выбран по количеству ядер, GPU по объёму VRAM в рамках бюджета."
+            cpu = bestCpu,
+            gpu = bestGpu,
+            motherboard = bestMotherboard,
+            totalPrice = total,
+            explanation = "Сборка подобрана с учётом совместимости сокета"
         )
     }
 }

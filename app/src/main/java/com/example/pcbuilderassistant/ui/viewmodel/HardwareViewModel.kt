@@ -14,13 +14,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import com.example.pcbuilderassistant.data.local.dao.GpuDao
 import com.example.pcbuilderassistant.data.local.entity.GpuEntity
+import com.example.pcbuilderassistant.data.local.JsonLoader
 class HardwareViewModel(application: Application) : AndroidViewModel(application) {
 
     private val database = DatabaseProvider.getDatabase(application)
 
     private val repository = HardwareRepository(
         database.cpuDao(),
-        database.gpuDao()
+        database.gpuDao(),
+        database.motherboardDao()
     )
     private val buildGenerator = BuildGenerator(repository)
 
@@ -31,71 +33,49 @@ class HardwareViewModel(application: Application) : AndroidViewModel(application
     val generatedCpu: StateFlow<String> = _generatedCpu
 
     fun loadData() {
+        val jsonData = JsonLoader.loadHardware(getApplication())
+
+        println("CPUs from JSON: ${jsonData.cpus.size}")
+        println("GPUs from JSON: ${jsonData.gpus.size}")
         viewModelScope.launch(Dispatchers.IO) {
 
             if (repository.getAllCpus().isEmpty()) {
-                repository.insertCpus(
-                    listOf(
-                        CpuEntity(
-                            name = "Ryzen 5 5600X",
-                            cores = 6,
-                            threads = 12,
-                            baseClock = 3.7,
-                            socket = "AM4",
-                            tdp = 65,
-                            price = 85000
-                        ),
-                        CpuEntity(
-                            name = "Intel i7-12700K",
-                            cores = 12,
-                            threads = 20,
-                            baseClock = 3.6,
-                            socket = "LGA1700",
-                            tdp = 125,
-                            price = 160000
-                        )
-                    )
-                )
-            }
 
+                val jsonData = JsonLoader.loadHardware(getApplication())
+
+                repository.insertCpus(jsonData.cpus)
+                repository.insertGpus(jsonData.gpus)
+                repository.insertMotherboards(jsonData.motherboards)
+            }
 
             _cpus.value = repository.getAllCpus()
-            if (repository.getAllGpus().isEmpty()) {
-                repository.insertGpus(
-                    listOf(
-                        GpuEntity(
-                            name = "RTX 3060",
-                            vram = 12,
-                            powerConsumption = 170,
-                            price = 140000
-                        ),
-                        GpuEntity(
-                            name = "RX 6600",
-                            vram = 8,
-                            powerConsumption = 132,
-                            price = 120000
-                        )
-                    )
-                )
-            }
         }
-
     }
-
     fun generateBuild(preferences: UserPreferences) {
         viewModelScope.launch(Dispatchers.IO) {
 
             val build = buildGenerator.generate(preferences)
 
+            if (build == null) {
+                _generatedCpu.value =
+                    "Недостаточный бюджет для выбранных параметров"
+                return@launch
+            }
+
             _generatedCpu.value =
                 """
             CPU: ${build.cpu.name}
             GPU: ${build.gpu.name}
-            
+
             Total price: ${build.totalPrice} ₸
-            
+
             ${build.explanation}
             """.trimIndent()
         }
     }
+
 }
+
+
+
+
