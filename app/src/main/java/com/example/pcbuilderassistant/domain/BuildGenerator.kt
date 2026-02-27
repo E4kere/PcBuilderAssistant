@@ -13,10 +13,44 @@ class BuildGenerator(
         val cpus = repository.getAllCpus()
         val gpus = repository.getAllGpus()
 
-        val cpu = cpus
-            .filter { it.price <= preferences.budget }
-            .maxByOrNull { it.cores }
-            ?: throw Exception("No suitable CPU found")
+        val cpu: CpuEntity
+        val gpu: GpuEntity
+
+        when (preferences.purpose) {
+
+            Purpose.GAMING -> {
+                cpu = cpus
+                    .filter { it.price <= preferences.budget / 2 }
+                    .maxByOrNull { it.cores }
+                    ?: throw Exception("No CPU found")
+
+                val remaining = preferences.budget - cpu.price
+
+                gpu = gpus
+                    .filter { it.price <= remaining }
+                    .maxByOrNull { it.vram }
+                    ?: throw Exception("No GPU found")
+            }
+
+            Purpose.WORK -> {
+                cpu = cpus
+                    .filter { it.price <= preferences.budget * 0.7 }
+                    .maxByOrNull { it.cores }
+                    ?: throw Exception("No CPU found")
+
+                val remaining = preferences.budget - cpu.price
+
+                gpu = gpus
+                    .filter { it.price <= remaining }
+                    .maxByOrNull { it.vram }
+                    ?: throw Exception("No GPU found")
+            }
+
+            Purpose.MODELING -> {
+                cpu = cpus
+                    .filter { it.price <= preferences.budget * 0.6 }
+                    .maxByOrNull { it.cores }
+                    ?: throw Exception("No CPU found")
 
         val remainingBudget = preferences.budget - cpu.price
 
