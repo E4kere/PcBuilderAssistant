@@ -8,7 +8,7 @@ import com.example.pcbuilderassistant.data.local.entity.MotherboardEntity
 data class Build(
     val cpu: CpuEntity,
     val gpu: GpuEntity,
+    val motherboard: MotherboardEntity,
     val totalPrice: Int,
-    val explanation: String,
-    val motherboard: MotherboardEntity
+    val score: Double
 )

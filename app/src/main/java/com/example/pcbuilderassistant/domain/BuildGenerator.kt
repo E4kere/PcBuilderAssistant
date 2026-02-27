@@ -2,10 +2,8 @@ package com.example.pcbuilderassistant.domain
 
 import com.example.pcbuilderassistant.data.local.entity.CpuEntity
 import com.example.pcbuilderassistant.data.local.entity.GpuEntity
-import com.example.pcbuilderassistant.data.repository.HardwareRepository
-import com.example.pcbuilderassistant.data.local.dao.MotherboardDao
 import com.example.pcbuilderassistant.data.local.entity.MotherboardEntity
-
+import com.example.pcbuilderassistant.data.repository.HardwareRepository
 
 class BuildGenerator(
     private val repository: HardwareRepository
@@ -17,11 +15,8 @@ class BuildGenerator(
 
         val cpus = repository.getAllCpus()
         val gpus = repository.getAllGpus()
-        val compatibleMotherboards =
-            repository.getMotherboardsBySocket(cpu.socket)
 
-        if (cpus.isEmpty() || gpus.isEmpty() || motherboards.isEmpty())
-            return null
+        if (cpus.isEmpty() || gpus.isEmpty()) return null
 
         var bestScore = Double.MIN_VALUE
         var bestCpu: CpuEntity? = null
@@ -29,34 +24,38 @@ class BuildGenerator(
         var bestMotherboard: MotherboardEntity? = null
 
         for (cpu in cpus) {
+
+
+            val compatibleMotherboards =
+                repository.getMotherboardsBySocket(cpu.socket)
+
+            if (compatibleMotherboards.isEmpty()) continue
+
             for (gpu in gpus) {
 
-                val compatibleMotherboards =
-                    motherboards.filter { it.socket == cpu.socket }
+                for (motherboard in compatibleMotherboards) {
 
-                if (compatibleMotherboards.isEmpty()) continue
+                    val totalPrice =
+                        cpu.price + gpu.price + motherboard.price
 
-                val motherboard =
-                    compatibleMotherboards.minByOrNull { it.price } ?: continue
+                    // Проверка бюджета
+                    if (totalPrice > preferences.budget) continue
 
-                val totalPrice =
-                    cpu.price + gpu.price + motherboard.price
+                    val score = scoringEngine.scoreBuild(
+                        cpu = cpu,
+                        gpu = gpu,
+                        motherboard = motherboard,
+                        budget = preferences.budget,
+                        purpose = preferences.purpose,
+                        priority = preferences.priority
+                    )
 
-                if (totalPrice > preferences.budget) continue
-
-                val score = scoringEngine.scoreBuild(
-                    cpu = cpu,
-                    gpu = gpu,
-                    budget = preferences.budget,
-                    purpose = preferences.purpose,
-                    priority = preferences.priority
-                )
-
-                if (score > bestScore) {
-                    bestScore = score
-                    bestCpu = cpu
-                    bestGpu = gpu
-                    bestMotherboard = motherboard
+                    if (score > bestScore) {
+                        bestScore = score
+                        bestCpu = cpu
+                        bestGpu = gpu
+                        bestMotherboard = motherboard
+                    }
                 }
             }
         }
@@ -64,15 +63,12 @@ class BuildGenerator(
         if (bestCpu == null || bestGpu == null || bestMotherboard == null)
             return null
 
-        val total =
-            bestCpu.price + bestGpu.price + bestMotherboard.price
-
         return Build(
             cpu = bestCpu,
             gpu = bestGpu,
             motherboard = bestMotherboard,
-            totalPrice = total,
-            explanation = "Сборка подобрана с учётом совместимости сокета"
+            totalPrice = bestCpu.price + bestGpu.price + bestMotherboard.price,
+            score = bestScore
         )
     }
 }
