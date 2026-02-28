@@ -22,7 +22,8 @@ class HardwareViewModel(application: Application) : AndroidViewModel(application
     private val repository = HardwareRepository(
         database.cpuDao(),
         database.gpuDao(),
-        database.motherboardDao()
+        database.motherboardDao(),
+        database.psuDao()
     )
     private val buildGenerator = BuildGenerator(repository)
 
@@ -46,6 +47,7 @@ class HardwareViewModel(application: Application) : AndroidViewModel(application
                 repository.insertCpus(jsonData.cpus)
                 repository.insertGpus(jsonData.gpus)
                 repository.insertMotherboards(jsonData.motherboards)
+                repository.insertPsus(jsonData.psus)
             }
 
             _cpus.value = repository.getAllCpus()
@@ -64,13 +66,21 @@ class HardwareViewModel(application: Application) : AndroidViewModel(application
 
             _generatedCpu.value =
                 """
-            CPU: ${build.cpu.name}
-            GPU: ${build.gpu.name}
+🎮 РЕКОМЕНДУЕМАЯ СБОРКА
 
-            Total price: ${build.totalPrice} ₸
+CPU: ${build.cpu.name}
+GPU: ${build.gpu.name}
+Motherboard: ${build.motherboard.name}
+PSU: ${build.psu.name}
 
-            ${build.explanation}
-            """.trimIndent()
+Estimated FPS: ${build.estimatedFps}
+
+Total price: ${build.totalPrice} ₸
+
+AI Score: ${"%.2f".format(build.score)}
+
+${build.explanation}
+""".trimIndent()
         }
     }
 

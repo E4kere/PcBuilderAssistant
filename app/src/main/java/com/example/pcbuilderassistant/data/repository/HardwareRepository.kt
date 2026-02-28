@@ -1,37 +1,29 @@
 package com.example.pcbuilderassistant.data.repository
 
-import com.example.pcbuilderassistant.data.local.dao.CpuDao
-import com.example.pcbuilderassistant.data.local.entity.CpuEntity
-import com.example.pcbuilderassistant.data.local.dao.GpuDao
-import com.example.pcbuilderassistant.data.local.entity.GpuEntity
-import com.example.pcbuilderassistant.data.local.dao.MotherboardDao
-import com.example.pcbuilderassistant.data.local.entity.MotherboardEntity
-
+import com.example.pcbuilderassistant.data.local.dao.*
+import com.example.pcbuilderassistant.data.local.entity.*
 
 class HardwareRepository(
     private val cpuDao: CpuDao,
     private val gpuDao: GpuDao,
-    private val motherboardDao: MotherboardDao
+    private val motherboardDao: MotherboardDao,
+    private val psuDao: PsuDao
 ) {
 
-    suspend fun getAllCpus(): List<CpuEntity> {
-        return cpuDao.getAll()
-    }
+    suspend fun getAllCpus() = cpuDao.getAll()
+    suspend fun insertCpus(cpus: List<CpuEntity>) = cpuDao.insertAll(cpus)
 
-    suspend fun insertCpus(cpus: List<CpuEntity>) {
-        cpuDao.insertAll(cpus)
-    }
     suspend fun getAllGpus() = gpuDao.getAll()
+    suspend fun insertGpus(gpus: List<GpuEntity>) = gpuDao.insertAll(gpus)
 
-    suspend fun insertGpus(gpus: List<GpuEntity>) {
-        gpuDao.insertAll(gpus)
-    }
     suspend fun getAllMotherboards() = motherboardDao.getAll()
+    suspend fun insertMotherboards(mbs: List<MotherboardEntity>) =
+        motherboardDao.insertAll(mbs)
 
-    suspend fun insertMotherboards(motherboards: List<MotherboardEntity>) =
-        motherboardDao.insertAll(motherboards)
+    suspend fun getMotherboardsBySocket(socket: String) =
+        motherboardDao.getBySocket(socket)
 
-    suspend fun getMotherboardsBySocket(socket: String): List<MotherboardEntity> {
-        return motherboardDao.getBySocket(socket)
-    }
+    suspend fun getAllPsus() = psuDao.getAll()
+    suspend fun insertPsus(psus: List<PsuEntity>) =
+        psuDao.insertAll(psus)
 }

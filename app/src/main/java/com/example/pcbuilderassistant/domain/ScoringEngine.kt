@@ -1,8 +1,6 @@
 package com.example.pcbuilderassistant.domain
 
-import com.example.pcbuilderassistant.data.local.entity.CpuEntity
-import com.example.pcbuilderassistant.data.local.entity.GpuEntity
-import com.example.pcbuilderassistant.data.local.entity.MotherboardEntity
+import com.example.pcbuilderassistant.data.local.entity.*
 
 class ScoringEngine {
 
@@ -14,6 +12,8 @@ class ScoringEngine {
         purpose: Purpose,
         priority: Priority
     ): Double {
+
+        if (budget <= 0) return 0.0
 
         val cpuPerformance = cpu.cores * 2 + cpu.threads
         val gpuPerformance = gpu.vram * 10
@@ -41,7 +41,8 @@ class ScoringEngine {
         return when (priority) {
             Priority.CHEAP -> performanceScore / totalPrice
             Priority.PERFORMANCE -> performanceScore
-            Priority.BALANCED -> performanceScore * 0.7 + budgetUsage * 100 * 0.3
+            Priority.BALANCED ->
+                performanceScore * 0.7 + budgetUsage * 100 * 0.3
         }
     }
 }

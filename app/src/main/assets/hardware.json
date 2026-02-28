@@ -11,7 +11,33 @@
     { "name": "RTX 4060", "vram": 8, "powerConsumption": 115, "price": 150000 }
   ],
   "motherboards": [
-    { "name": "B550 Aorus Elite", "socket": "AM4", "chipset": "B550", "price": 70000 },
-    { "name": "MSI B660M", "socket": "LGA1700", "chipset": "B660", "price": 80000 }
+    {
+      "name": "B550 Aorus Elite",
+      "socket": "AM4",
+      "chipset": "B550",
+      "formFactor": "ATX",
+      "ramType": "DDR4",
+      "maxRamFrequency": 4733,
+      "ramSlots": 4,
+      "pcieVersion": 4,
+      "hasWifi": false,
+      "price": 70000
+    },
+    {
+      "name": "MSI B660M",
+      "socket": "LGA1700",
+      "chipset": "B660",
+      "formFactor": "mATX",
+      "ramType": "DDR4",
+      "maxRamFrequency": 4800,
+      "ramSlots": 4,
+      "pcieVersion": 4,
+      "hasWifi": true,
+      "price": 80000
+    }
+  ],
+  "psus": [
+    { "name": "650W Bronze", "wattage": 650, "efficiency": "80+ Bronze", "price": 35000 },
+    { "name": "750W Gold", "wattage": 750, "efficiency": "80+ Gold", "price": 50000 }
   ]
 }
